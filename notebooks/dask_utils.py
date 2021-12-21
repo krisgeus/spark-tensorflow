@@ -7,8 +7,8 @@ from PIL import Image
 from torchvision import transforms
 
 
-def load_image(path: Union[str, Path], file_system=__builtins__) -> Image.Image:
-    with file_system.open(path, "rb") as infile:
+def load_image(path: Union[str, Path]) -> Image.Image:
+    with Path(path).open("rb") as infile:
         return Image.open(infile).convert("RGB")
 
 
@@ -22,4 +22,4 @@ def preprocess_image(
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ]
-    )
+    )(img)
