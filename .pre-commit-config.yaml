@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/mwouts/jupytext
+    rev: v1.11.0
+    hooks:
+    - id: jupytext
+      args: [--from, ipynb, --to, markdown]
+  - repo: local
+    hooks:
+    - id: export-poetry-dependencies
+      name: export-poetry-dependencies
+      entry: bash -c 'poetry export -f requirements.txt --output requirements.txt'
+      language: system
+      types: [python]
+      pass_filenames: false
