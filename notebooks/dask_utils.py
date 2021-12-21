@@ -19,7 +19,7 @@ def load_image(path: Union[str, Path]) -> Image.Image:
 
 def preprocess_image(
     img: NDArray[(3, Any, Any), np.uint8]
-) -> NDArray[(3, 224, 224), np.float64]:
+) -> TensorType[(3, 224, 224), torch.float64]:
     return transforms.Compose(
         [
             transforms.Resize(256),
@@ -37,7 +37,7 @@ def stack_batch(
 
 
 def predict(
-    batch: TensorType[3, 224, 224, -1, torch.float64], model: ResNet
+    batch: TensorType[-1, 3, 224, 224, torch.float64], model: ResNet
 ) -> NDArray[(Any,), np.float64]:
     with torch.no_grad():
         out = model(batch)
