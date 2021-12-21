@@ -12,103 +12,134 @@ jupyter:
     name: python3
 ---
 
-# Deploying a dask cluster for inference of deep neural networks
+# Using dask for inference of deep neural networks
+
+See [this Dask tutorial](https://examples.dask.org/machine-learning/torch-prediction.html) for the inspiration of the implementation below.
 
 ```python
 from typing import Union, Any, Tuple, List
 from pathlib import Path
 
 import numpy as np
+import matplotlib.pyplot as plt
+import tensorflow as tf
+
 from nptyping import NDArray
 from torchtyping import TensorType
 import dask
-import dask.array as da
 import torch 
-import matplotlib.pyplot as plt
-
-import dask_image.imread
-import dask_image.ndfilters
-import dask_image.ndmeasure
-
-import toolz
-
+from torchvision import models
 
 %load_ext autoreload
 %reload_ext autoreload
 %autoreload 2
-from dask_utils import load_image, preprocess_image, stack_batch
+from dask_utils import (
+    load_image_wrapper, 
+    predict_wrapper, 
+    stack_batch_wrapper, 
+    preprocess_image_wrapper, 
+    create_batches
+)
+```
+
+### Load images
+
+```python
+images_dir = Path("../data/images/vanalleswat")
+images_paths = [img for img in images_dir.glob("*") if img.suffix in ['.jpg', '.png']]
+```
+
+Lazy-load the images by calling the delayed `load_image` function (in `dask_utils.py`)
+
+```python
+delayed_images = [load_image_wrapper(img) for img in images_paths]
 ```
 
 ```python
-img_dir = Path("../data/images/vanalleswat")
-imgs = [img for img in img_dir.glob("*") if img.suffix in ['.jpg', '.png']]
+delayed_images_preprocessed = [preprocess_image_wrapper(img) for img in delayed_images]
 ```
 
-Lazy-load the images using dask-image
+Since we've transformed & cropped each image, we should get back an image of shape `n_channels x height x width`
 
 ```python
-inference_images = dask_image.imread.imread(img_dir / "*")
+delayed_images_preprocessed[0].compute().shape
+```
+
+It makes more sense to batch the images in groups of e.g. 10 and let the model predict the class for each image in a batch.
+
+```python
+delayed_images_batched = create_batches(delayed_images_preprocessed, batch_size=10)
 ```
 
 ```python
-inference_images
+array_images = [
+    image.compute()
+    for image_idx, image 
+    in enumerate(delayed_images) 
+    if image_idx <= 15
+]
 ```
 
 ```python
-fig, ax = plt.subplots(5, 5, figsize=(12, 12))
+fig, ax = plt.subplots(4, 4, figsize=(12,12))
 ax = ax.ravel()
 
-for ax_idx, ax_sub in enumerate(ax):
-    ax_sub.imshow(inference_images[ax_idx])
+for ax_idx, ax in enumerate(ax):
+    ax.imshow(array_images[ax_idx])
+
+plt.tight_layout()
 plt.show()
 ```
 
-We can wrap the loading & preprocessing functions in delayed decorators provided by dask to make them lazy.
+## Set up the model
+
+
+To avoid having to load the model on each worker, we turn the pre-trained resnet model into a delayed object, which allows it to be passed around to each worker as necessary
 
 ```python
-@dask.delayed
-def load_image_wrapper(img_path: Union[Path, str]) -> NDArray[(1, Any, Any, 3), np.uint8]:
-    return load_image(img_path)
-
-
-@dask.delayed
-def preprocess_image_wrapper(img: NDArray[(Any, Any, 3), np.uint8]) -> TensorType[3, 224, 224, torch.float64]:
-    return preprocess_image(img)
-
-
-@dask.delayed
-def stack_batch_wrapper(batch: Tuple[TensorType[224, 224, 3, torch.float64]]) -> TensorType[-1, 224, 224, 3, torch.float64]:
-    return stack_batch(batch)
-
-
-def create_batches(data: List[TensorType[224, 224, 3, torch.float64]], batch_size: int = 10) -> TensorType[-1, 224, 224, 3, torch.float64]:
-    return [stack_batch_wrapper(batch) for batch in toolz.partition_all(batch_size, data)]
+delayed_model = dask.delayed(models.resnet50(pretrained=True).cpu().eval())
 ```
 
 ```python
-imgs_delayed = [load_image_wrapper(img) for img in imgs]
+delayed_model
 ```
 
 ```python
-imgs_preprocessed = [preprocess_image_wrapper(img) for img in imgs_delayed]
+delayed_batch_predictions = [
+    predict_wrapper(batch, delayed_model, return_class=False) 
+    for batch 
+    in delayed_images_batched
+]
 ```
 
 ```python
-imgs_preprocessed[0].compute().shape
+delayed_predictions = dask.delayed(lambda x: np.concatenate(x, axis=0))(delayed_batch_predictions)
 ```
 
 ```python
+# Fetch the results in main memory
+predictions = delayed_predictions.compute()
+```
 
+I checked and this mapping from TF seems to work fine for pytorch resnet models
+
+```python
+class_predictions = tf.keras.applications.resnet50.decode_predictions(
+        predictions, top=5
+)
 ```
 
 ```python
-create_batches(imgs_preprocessed, batch_size=10)
+fig, ax = plt.subplots(4, 4, figsize=(12,12))
+ax = ax.ravel()
+
+for img_idx in range(16):
+
+    ax[img_idx].imshow(delayed_images[img_idx].compute())
+    ax[img_idx].set_title(class_predictions[img_idx][0][1])
+
+plt.tight_layout()
+plt.show()
 ```
 
-```python
-from dask import Delayed
-```
-
-```python
-
-```
+Clearly, this requires some fine-tuning :-).
