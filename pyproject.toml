@@ -19,6 +19,9 @@ torch = "^1.10.1"
 dask-image = "2021.12.0"
 dask = {version = "2021.12.0", extras = ["complete"]}
 dask-ml = "2021.11.30"
+torchvision = "0.11.2"
+nptyping = "^1.4.4"
+scikit-image = "^0.19.1"
 
 [tool.poetry.dev-dependencies]
 jupytext = "^1.13.4"
