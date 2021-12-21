@@ -38,7 +38,7 @@ def stack_batch(
 
 def predict(
     batch: TensorType[-1, 3, 224, 224, torch.float64], model: ResNet
-) -> NDArray[(Any,), np.float64]:
+) -> NDArray[(Any, 1000), np.float64]:
     with torch.no_grad():
         out = model(batch)
     return out.numpy()
