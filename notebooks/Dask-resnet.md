@@ -15,7 +15,7 @@ jupyter:
 # Deploying a dask cluster for inference of deep neural networks
 
 ```python
-from typing import Union, Any
+from typing import Union, Any, Tuple, List
 from pathlib import Path
 
 import numpy as np
@@ -30,11 +30,13 @@ import dask_image.imread
 import dask_image.ndfilters
 import dask_image.ndmeasure
 
+import toolz
+
 
 %load_ext autoreload
 %reload_ext autoreload
 %autoreload 2
-from dask_utils import load_image, preprocess_image
+from dask_utils import load_image, preprocess_image, stack_batch
 ```
 
 ```python
@@ -68,9 +70,19 @@ We can wrap the loading & preprocessing functions in delayed decorators provided
 def load_image_wrapper(img_path: Union[Path, str]) -> NDArray[(1, Any, Any, 3), np.uint8]:
     return load_image(img_path)
 
+
 @dask.delayed
 def preprocess_image_wrapper(img: NDArray[(Any, Any, 3), np.uint8]) -> TensorType[3, 224, 224, torch.float64]:
     return preprocess_image(img)
+
+
+@dask.delayed
+def stack_batch_wrapper(batch: Tuple[TensorType[224, 224, 3, torch.float64]]) -> TensorType[-1, 224, 224, 3, torch.float64]:
+    return stack_batch(batch)
+
+
+def create_batches(data: List[TensorType[224, 224, 3, torch.float64]], batch_size: int = 10) -> TensorType[-1, 224, 224, 3, torch.float64]:
+    return [stack_batch_wrapper(batch) for batch in toolz.partition_all(batch_size, data)]
 ```
 
 ```python
@@ -83,6 +95,18 @@ imgs_preprocessed = [preprocess_image_wrapper(img) for img in imgs_delayed]
 
 ```python
 imgs_preprocessed[0].compute().shape
+```
+
+```python
+
+```
+
+```python
+create_batches(imgs_preprocessed, batch_size=10)
+```
+
+```python
+from dask import Delayed
 ```
 
 ```python
