@@ -2,7 +2,7 @@
 name = "distributed-inference"
 version = "0.1.0"
 description = "Spark & Dask for distributed inference of deep learning models"
-authors = ["Kris Geusebroek <krisgeusebroek@godatadriven.com>, Jasper Ginn <jasperginn@godatadrive.com>"]
+authors = ["Kris Geusebroek <krisgeusebroek@godatadriven.com>, Jasper Ginn <jasperginn@godatadriven.com>"]
 readme = "README.md"
 packages = [{include = "distributed_inference"}]
 
@@ -23,6 +23,7 @@ dask-ml = "2021.11.30"
 [tool.poetry.dev-dependencies]
 jupytext = "^1.13.4"
 pre-commit = "^2.16.0"
+pandoc = "^2.0.1"
 
 [build-system]
 requires = ["poetry-core"]
