@@ -10,5 +10,5 @@ repos:
       name: export-poetry-dependencies
       entry: bash -c 'poetry export -f requirements.txt --output requirements.txt'
       language: system
-      types: [python]
+      types: [toml]
       pass_filenames: true
