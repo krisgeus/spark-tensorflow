@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "distributed-inference"
+version = "0.1.0"
+description = "Spark & Dask for distributed inference of deep learning models"
+authors = ["Kris Geusebroek <krisgeusebroek@godatadriven.com>, Jasper Ginn <jasperginn@godatadrive.com>"]
+readme = "README.md"
+packages = [{include = "distributed_inference"}]
+
+[tool.poetry.dependencies]
+python = "^3.8,<3.9"
+jupyterlab = "^3.2.5"
+pyspark = "3.1.2"
+delta-spark = "1.0.0"
+pyarrow = "^6.0.1"
+pandas = "^1.3.5"
+tensorflow = "^2.7.0"
+Pillow = "^8.4.0"
+torch = "^1.10.1"
+
+
+[tool.poetry.dev-dependencies]
+jupytext = "^1.13.4"
+pre-commit = "^2.16.0"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
