@@ -22,6 +22,9 @@ dask-ml = "2021.11.30"
 torchvision = "0.11.2"
 nptyping = "^1.4.4"
 scikit-image = "^0.19.1"
+matplotlib = "^3.5.1"
+graphviz = "^0.19.1"
+torchtyping = "^0.1.4"
 
 [tool.poetry.dev-dependencies]
 jupytext = "^1.13.4"
