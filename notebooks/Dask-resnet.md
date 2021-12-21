@@ -17,17 +17,13 @@ jupyter:
 See [this Dask tutorial](https://examples.dask.org/machine-learning/torch-prediction.html) for the inspiration of the implementation below.
 
 ```python
-from typing import Union, Any, Tuple, List
 from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-from nptyping import NDArray
-from torchtyping import TensorType
 import dask
-import torch 
 from torchvision import models
 
 %load_ext autoreload
@@ -36,7 +32,6 @@ from torchvision import models
 from dask_utils import (
     load_image_wrapper, 
     predict_wrapper, 
-    stack_batch_wrapper, 
     preprocess_image_wrapper, 
     create_batches
 )
