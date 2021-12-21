@@ -45,9 +45,7 @@ def predict(
 
 
 @dask.delayed
-def load_image_wrapper(
-    img_path: Union[Path, str]
-) -> NDArray[(1, Any, Any, 3), np.uint8]:
+def load_image_wrapper(img_path: Union[Path, str]) -> NDArray[(Any, Any, 3), np.uint8]:
     return load_image(img_path)
 
 
