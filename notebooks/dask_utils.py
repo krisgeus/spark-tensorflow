@@ -18,7 +18,7 @@ def load_image(path: Union[str, Path]) -> Image.Image:
 
 
 def preprocess_image(
-    img: NDArray[(3, Any, Any), np.uint8]
+    img: NDArray[(Any, Any, 3), np.uint8]
 ) -> TensorType[3, 224, 224, torch.float64]:
     return transforms.Compose(
         [
