@@ -138,3 +138,97 @@ plt.show()
 ```
 
 Clearly, this requires some fine-tuning :-).
+
+
+## Dask + tensorflow
+
+Doing the same thing for tensorflow is a bit easier since we already get a lot of preprocessing functions out of the box with Keras.
+
+```python
+import tensorflow as tf
+import toolz
+from functools import partial
+
+def predict_class(model, batch):
+    return model.predict(batch)
+
+concatenate_predictions = partial(tf.concat, axis=0)
+
+image_to_array_wrapper = dask.delayed(tf.keras.utils.img_to_array, name="image_to_array")
+
+crop_array_wrapper = dask.delayed(tf.keras.layers.CenterCrop(224, 224, name="crop"), name="crop_image")
+
+batch_image_wrapper = dask.delayed(tf.stack, name="make_batch")
+
+preprocess_input_wrapper = dask.delayed(tf.keras.applications.resnet50.preprocess_input, name="preprocess_images")
+
+predict_wrapper = dask.delayed(predict_class, name="predict_class")
+
+stack_predictions_wrapper = dask.delayed(concatenate_predictions, name="stack_predictions")
+
+model = tf.keras.applications.resnet50.ResNet50(
+        include_top=True, weights='imagenet', input_tensor=None,
+        input_shape=None, pooling=None, classes=1000
+    )
+
+model_delayed = dask.delayed(
+    model, name="resnet"
+)
+```
+
+Apply the preprocessing functions
+
+```python
+delayed_images_tensor = [image_to_array_wrapper(img) for img in delayed_images]
+
+delayed_images_cropped = [crop_array_wrapper(tensor) for tensor in delayed_images_tensor]
+
+delayed_images_batched = [batch_image_wrapper(batch) for batch in toolz.partition_all(10, delayed_images_cropped)]
+
+delayed_images_preprocessed = [preprocess_input_wrapper(tensor) for tensor in delayed_images_batched]
+```
+
+Predict classes for each batch & concatenate
+
+```python
+predictions = [predict_wrapper(model_delayed, batch) for batch in delayed_images_preprocessed]
+```
+
+```python
+predictions_stacked = stack_predictions_wrapper(predictions)
+```
+
+```python
+predictions_stacked.visualize(name="dask-tensorflow")
+```
+
+```python
+predictions_stacked_local = predictions_stacked.compute()
+```
+
+```python
+predictions_stacked_local.shape
+```
+
+```python
+class_predictions = tf.keras.applications.resnet50.decode_predictions(
+        predictions_stacked_local.numpy(), top=5
+)
+```
+
+```python
+fig, ax = plt.subplots(4, 4, figsize=(12,12))
+ax = ax.ravel()
+
+for img_idx in range(16):
+
+    ax[img_idx].imshow(delayed_images[img_idx].compute())
+    ax[img_idx].set_title(class_predictions[img_idx][0][1])
+
+plt.tight_layout()
+plt.show()
+```
+
+```python
+
+```
