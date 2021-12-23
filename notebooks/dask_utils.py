@@ -18,7 +18,7 @@ def load_image(path: Union[str, Path]) -> Image.Image:
 
 
 def preprocess_image(
-    img: NDArray[(3, Any, Any), np.uint8]
+    img: NDArray[(Any, Any, 3), np.uint8]
 ) -> TensorType[3, 224, 224, torch.float64]:
     return transforms.Compose(
         [
@@ -68,7 +68,7 @@ def predict_wrapper(
     batch: TensorType[-1, 3, 224, 224, torch.float64],
     model: ResNet,
     return_class: bool = False,
-) -> NDArray[(Any, 1000), np.float64]:
+) -> Union[NDArray[(Any, 1000), np.float64], NDArray[(Any,), np.int64]]:
     if not return_class:
         return predict(batch, model)
     else:
